@@ -30,38 +30,52 @@ class Block {
 
 class Blockchain {
   /**
-   * @todo check whether genesis block exists
+   *
    */
   constructor() {
-    this.chain = [];
-    this.addBlock(new Block("First block in the chain - Genesis block"));
+    this.getBlockHeight()
+      .then(result => {
+        // Checks blockheight
+        if (result === -1) {
+          console.log("There are no blocks in the blockchain. Adding Genesis");
+          this.addBlock(
+            new Block("First block in the chain - Genesis block")
+          ).then(result =>
+            console.log("Genesis block was added to the blockchain")
+          );
+        }
+      })
+      .catch(err =>
+        console.log("There was an error in the Blockchain construction!", err)
+      );
   }
 
-  // Add new block
-  addBlock(newBlock) {
-    // Block height
-    newBlock.height = this.chain.length;
+  /**
+   * Function that fills in the necessary fields for the new block:
+   * hash, height, timestamp and adds it the DB
+   * @param {object} newBlock
+   */
+  async addBlock(newBlock) {
+    let blockHeight = await this.getBlockHeight();
+
+    newBlock.height = blockHeight + 1;
     // UTC timestamp
-    newBlock.time = new Date()
-      .getTime()
-      .toString()
-      .slice(0, -3);
-    // previous block hash
-    if (this.chain.length > 0) {
-      newBlock.previousBlockHash = this.chain[this.chain.length - 1].hash;
+    newBlock.time = new Date().getTime().toString();
+
+    if (newBlock.height > 0) {
+      const lastBlock = await this.getBlock(blockHeight);
+      newBlock.previousBlockHash = lastBlock.hash;
     }
+
     // Block hash with SHA256 using newBlock and converting to a string
     newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-    console.log(JSON.stringify(newBlock));
+    console.log("BLOCK TO ADD: ", JSON.stringify(newBlock));
     // Adding block object to chain
-
-    this.chain.push(newBlock);
-
-    addBlockToDB(newBlock.height, JSON.stringify(newBlock))
-      .then(function() {
-        return getBlockFromDB(newBlock.height);
+    this.addBlockToDB(newBlock.height, JSON.stringify(newBlock))
+      .then(() => {
+        return this.getBlockFromDB(newBlock.height);
       })
-      .then(function(value) {
+      .then(value => {
         console.log("GOT: ", value);
       })
       .catch(function(err) {
@@ -69,21 +83,32 @@ class Blockchain {
       });
   }
 
-  // Get block height
-  getBlockHeight() {
-    return this.chain.length - 1;
+  /**
+   * Function that returns the block height
+   * @return {number} the block height
+   */
+  async getBlockHeight() {
+    return await this.getBlockHeightFromDB();
   }
 
-  // get block
-  getBlock(blockHeight) {
-    // return object as a single string
-    return JSON.parse(JSON.stringify(this.chain[blockHeight]));
+  /**
+   *
+   * @param {number} blockHeight
+   * @return {Block} block for the given height
+   */
+  async getBlock(blockHeight) {
+    return JSON.parse(await this.getBlockFromDB(blockHeight));
   }
 
-  // validate block
-  validateBlock(blockHeight) {
+  /**
+   * Function that validates the given block
+   * @param {number} blockHeight
+   * @return {boolean} true if block valid, false otherwise
+   */
+  async validateBlock(blockHeight) {
     // get block object
-    let block = this.getBlock(blockHeight);
+
+    let block = await this.getBlock(blockHeight);
     // get block hash
     let blockHash = block.hash;
     // remove block hash to test block integrity
@@ -106,16 +131,23 @@ class Blockchain {
     }
   }
 
-  // Validate blockchain
-  validateChain() {
+  /**
+   * Function that validates the whole chain
+   * @return {boolean} true if valid
+   */
+  async validateChain() {
     let errorLog = [];
-    for (var i = 0; i < this.chain.length - 1; i++) {
+
+    const blockHeight = await this.getBlockHeight();
+    for (var i = 0; i < blockHeight; i++) {
       // validate block
-      if (!this.validateBlock(i)) errorLog.push(i);
+      if (!(await this.validateBlock(i))) errorLog.push(i);
       // compare blocks hash link
-      let blockHash = this.chain[i].hash;
-      let previousHash = this.chain[i + 1].previousBlockHash;
-      if (blockHash !== previousHash) {
+      let currentBlockHash = (await this.getBlock(i)).hash;
+      let nextBlockPreviousBlockHash = (await this.getBlock(i + 1))
+        .previousBlockHash;
+
+      if (currentBlockHash !== nextBlockPreviousBlockHash) {
         errorLog.push(i);
       }
     }
@@ -126,56 +158,69 @@ class Blockchain {
       console.log("No errors detected");
     }
   }
+
+  /**
+   * Function that adds a new block to the DB
+   * @param {int} key - the height of the block
+   * @param {object} value the block
+   * @return {Promise} as per the documentation of levelDB, w/o callback db.get returns a promise
+   */
+  addBlockToDB(key, value) {
+    return db.put(key, value);
+  }
+
+  /**
+   *
+   * @param {number} key the height of the block
+   * @return {Promise} as per the documentation of levelDB, w/o callback db.get returns a promise
+   */
+  getBlockFromDB(key) {
+    return db.get(key);
+  }
+
+  /**
+   * @return {Promise}
+   */
+  getBlockHeightFromDB() {
+    return new Promise((resolve, reject) => {
+      let height = -1;
+
+      db.createReadStream()
+        .on("data", function(data) {
+          height++;
+          //console.log(data.key, "=", data.value);
+        })
+        .on("error", function(err) {
+          console.log("There was an error: ", err);
+          reject(err);
+        })
+        .on("close", function() {
+          console.log("Stream closed");
+        })
+        .on("end", function() {
+          console.log("Stream ended");
+          resolve(height);
+        });
+    });
+  }
 }
 
-/**
- *
- * @param {*} key
- * @param {*} value
- */
-const addBlockToDB = (key, value) => {
-  return db.put(key, value);
-};
-
-/**
- *
- * @param {*} key
- */
-const getBlockFromDB = key => {
-  return db.get(key);
-};
-
-/**
- *
- */
-const getBlockHeightFromDB = () => {
-  let height = -1;
-
-  db.createReadStream()
-    .on("data", function(data) {
-      height++;
-      console.log(data.key, "=", data.value);
-    })
-    .on("error", function(err) {
-      console.log("Oh my!", err);
-    })
-    .on("close", function() {
-      console.log("Stream closed");
-    })
-    .on("end", function() {
-      console.log("Stream ended");
-      console.log("HEIGHT: ", height);
-      return height;
-    });
-};
-
 blockchain = new Blockchain();
-block2 = new Block("Second Block");
-blockchain.addBlock(block2);
-blockchain.addBlock(new Block("Third Block"));
-blockchain.addBlock(new Block("Fourth Block"));
-blockchain.addBlock(new Block("Fifth Block"));
-blockchain.addBlock(new Block("Sixth Block"));
-blockchain.addBlock(new Block("Seventh Block"));
 
-getBlockHeightFromDB();
+(function theLoop(i) {
+  setTimeout(async () => {
+    await blockchain.addBlock(new Block(`Testing data ${i}`));
+    if (--i) theLoop(i);
+  }, 100);
+})(10);
+// setTimeout(() => {}, 3000);
+// (async () => {
+//   await blockchain.addBlock(new Block("Second Block"));
+//   await blockchain.addBlock(new Block("Third Block"));
+//   await blockchain.addBlock(new Block("Fourth Block"));
+//   await blockchain.addBlock(new Block("Fifth Block"));
+//   await blockchain.addBlock(new Block("Sixth Block"));
+//   await blockchain.addBlock(new Block("Seventh Block"));
+// })();
+
+setTimeout(() => blockchain.validateChain(), 3000);
