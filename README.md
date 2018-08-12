@@ -52,12 +52,6 @@ The information representing an individual is stored the following way:
 - Run the command `npm install` to install the dependencies
 - Run the program `node simpleChain.js`
 
-## Testing
-
-To test code:
-1: Open a command prompt or shell terminal after install node.js.
-2: Enter a node session, also known as REPL (Read-Evaluate-Print-Loop).
-
 ## To improve
 
 - Refactor the code to separate the implementation of the Block, Blockchain, and code for testing in different files
