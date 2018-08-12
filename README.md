@@ -48,7 +48,7 @@ The information representing an individual is stored the following way:
 
 ## How to run
 
-- Clone the project using: `git clone`
+- Clone the project using: `git clone https://github.com/ivivanov18/Private_Blockchain.git`
 - Run the command `npm install` to install the dependencies
 - Run the program `node simpleChain.js`
 
