@@ -27,7 +27,7 @@ Class that is represents every block and the information it contains, in the blo
 }
 ```
 
-### Blockchain
+### Class `Blockchain`
 
 Class that represents the blockchain. The class provides with the following functionalities:
 
