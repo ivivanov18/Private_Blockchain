@@ -1,2 +1,4 @@
 node_modules/
 blockchaindata/
+launch.json
+package-lock.json

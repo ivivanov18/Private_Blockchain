@@ -1,61 +1,63 @@
-# Blockchain Data
+# PRIVATE BLOCKCHAIN
 
-Blockchain has the potential to change the way that the world approaches data. Develop Blockchain skills by understanding the data model behind Blockchain by developing your own simplified private blockchain.
+## Description
 
-## Getting Started
+This is a an implementation of a private blockchain. All the code can be found in the file `simpleChain.js`.
+The program can:
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+- instantiate a Blockchain class and persist the Genesis Block (first block of the given blockchain) in the LevelDB database
+- add new subsequent blocks to the blockchain and persist them in the database
+- get the block height of the blockchain
+- get a block for a given block height
+- validate a block
+- validate the whole chain
 
-### Prerequisites
+## Data Model
 
-Installing Node and NPM is pretty straightforward using the installer package available from the (Node.js® web site)[https://nodejs.org/en/].
+### Class `Block`
 
-### Configuring your project
+Class that is represents every block and the information it contains, in the blockchain.
 
-- Use NPM to initialize your project and create package.json to store project dependencies.
+```javascript
+{   "hash" = "<SHA256 hash of the block>",
+    "height" = "<can be considered as the number of the block>",
+    "body" = "<data in the block>"),
+    "time" = "<timestamp of the creation of the block>",
+    "previousBlockHash" = "<hash of the previous block>"
+}
 ```
-npm init
-```
-- Install crypto-js with --save flag to save dependency to our package.json file
-```
-npm install crypto-js --save
-```
-- Install level with --save flag
-```
-npm install level --save
-```
+
+### Blockchain
+
+Class that represents the blockchain. The class provides with the following functionalities:
+
+- Persist blockchain data using LevelDB (level library)
+- Add new blocks to the blockchain
+- Get blocks from the blockchain
+- Get block height from the blockchain
+- Validate a single block
+- Validate the blockchain (multiple blocks)
+
+### Database
+
+The information of the blockchain is stored in a key-value database - LevelDB.
+The information representing an individual is stored the following way:
+
+- `key`= `block height` (starts at 0 for the Genesis block (first block))
+- `value` = `string representing the block information`
+
+## How to run
+
+- Clone the project using: `git clone`
+- Run the command `npm install` to install the dependencies
+- Run the program `node simpleChain.js`
 
 ## Testing
 
 To test code:
 1: Open a command prompt or shell terminal after install node.js.
 2: Enter a node session, also known as REPL (Read-Evaluate-Print-Loop).
-```
-node
-```
-3: Copy and paste your code into your node session
-4: Instantiate blockchain with blockchain variable
-```
-let blockchain = new Blockchain();
-```
-5: Generate 10 blocks using a for loop
-```
-for (var i = 0; i <= 10; i++) {
-  blockchain.addBlock(new Block("test data "+i));
-}
-```
-6: Validate blockchain
-```
-blockchain.validateChain();
-```
-7: Induce errors by changing block data
-```
-let inducedErrorBlocks = [2,4,7];
-for (var i = 0; i < inducedErrorBlocks.length; i++) {
-  blockchain.chain[inducedErrorBlocks[i]].data='induced chain error';
-}
-```
-8: Validate blockchain. The chain should now fail with blocks 2,4, and 7.
-```
-blockchain.validateChain();
-```
+
+## To improve
+
+- Refactor the code to separate the implementation of the Block, Blockchain, and code for testing in different files

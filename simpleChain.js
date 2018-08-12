@@ -1,11 +1,11 @@
 /* ===== SHA256 with Crypto-js ===============================
 |  Learn more: Crypto-js: https://github.com/brix/crypto-js  |
 |  =========================================================*/
-
 const SHA256 = require("crypto-js/sha256");
 
-//const LevelDB = require("./levelSandbox");
-
+/* ===== LevelBD Javascript  ===============================
+|  Learn more: Level: https://github.com/Level/level  |
+|  =========================================================*/
 const level = require("level");
 const chainDB = "./blockchaindata";
 const db = level(chainDB);
@@ -30,7 +30,7 @@ class Block {
 
 class Blockchain {
   /**
-   *
+   * Constructor for the Blockchain class. The constructor checks blockheight from DB
    */
   constructor() {
     this.getBlockHeight()
@@ -38,11 +38,11 @@ class Blockchain {
         // Checks blockheight
         if (result === -1) {
           console.log("There are no blocks in the blockchain. Adding Genesis");
-          this.addBlock(
-            new Block("First block in the chain - Genesis block")
-          ).then(result =>
-            console.log("Genesis block was added to the blockchain")
-          );
+          this.addBlock(new Block("First block in the chain - Genesis block"))
+            .then(result =>
+              console.log("Genesis block was added to the blockchain")
+            )
+            .catch(err => console.log(err));
         }
       })
       .catch(err =>
@@ -52,7 +52,7 @@ class Blockchain {
 
   /**
    * Function that fills in the necessary fields for the new block:
-   * hash, height, timestamp and adds it the DB
+   * hash, height, timestamp and finally adds it the DB
    * @param {object} newBlock
    */
   async addBlock(newBlock) {
@@ -101,8 +101,8 @@ class Blockchain {
   }
 
   /**
-   * Function that validates the given block
-   * @param {number} blockHeight
+   * Function that validates the provided block
+   * @param {number} blockHeight of the corresponding block in the DB
    * @return {boolean} true if block valid, false otherwise
    */
   async validateBlock(blockHeight) {
@@ -132,7 +132,7 @@ class Blockchain {
   }
 
   /**
-   * Function that validates the whole chain
+   * Function that validates the whole exisint blockchain in the DB
    * @return {boolean} true if valid
    */
   async validateChain() {
@@ -213,7 +213,7 @@ blockchain = new Blockchain();
     if (--i) theLoop(i);
   }, 100);
 })(10);
-// setTimeout(() => {}, 3000);
+
 // (async () => {
 //   await blockchain.addBlock(new Block("Second Block"));
 //   await blockchain.addBlock(new Block("Third Block"));
